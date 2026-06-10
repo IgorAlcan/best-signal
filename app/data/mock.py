@@ -11,8 +11,10 @@ Cada jogo tem `outcomes` com `fair_prob` somando ~1.0 (nossa distribuição de
 probabilidade) e `odds` da casa cuja implícita soma > 1.0 (a margem da casa).
 Onde `fair_prob > 1/odds`, existe value.
 
-Num sistema real este módulo seria trocado por um coletor de odds de verdade
-(ex.: The Odds API) — a interface `get_matches()` continuaria a mesma.
+Esta demo é 100% mock: não usa nenhuma API externa, chave ou serviço pago, e
+roda totalmente offline. A interface `get_matches()` é o único ponto de troca —
+se um dia houvesse uma fonte de odds, bastaria implementar a mesma assinatura,
+sem mexer no serviço nem na API.
 """
 
 from __future__ import annotations
