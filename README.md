@@ -1,140 +1,180 @@
-# ValueBet AI — Demo de Portfólio
+# ValueBetAI Portfolio Demo
 
-<!-- Troque OWNER/REPO pelo seu usuário e repositório no GitHub para o badge funcionar. -->
-![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)
+Demo educacional de detecção de value bets com FastAPI, Streamlit e dados 100%
+simulados. O projeto mostra uma arquitetura simples para carregar odds mockadas,
+calcular EV em porcentagem, expor uma API documentada e visualizar oportunidades
+em um dashboard sem depender de serviços externos.
 
-Detector de **apostas de valor (EV+)** multi-esportes (tênis, futebol, basquete),
-construído com **FastAPI** + um dashboard em JavaScript puro.
+> **Aviso obrigatório:** Este projeto é uma demonstração educacional de portfólio e não representa recomendação financeira, promessa de lucro ou incentivo a apostas reais.
 
-> ⚠️ **Aviso.** Projeto **educacional / de portfólio**. EV positivo é uma medida
-> estatística de longo prazo — **não promete lucro nem garante acerto**. Os dados
-> são **fictícios (mock)**: a aplicação **não usa nenhuma API externa, chave ou
-> serviço pago, e roda 100% offline**.
+## Funcionalidades
 
-![dashboard](docs/dashboard.png)
+- API FastAPI com endpoints de saúde, odds enriquecidas, value bets e cálculo de EV.
+- Dashboard Streamlit que importa os services diretamente, sem chamada HTTP interna.
+- Dados offline em `app/data/sample_odds.json`, com eventos simulados de tennis,
+  football e basketball.
+- Cálculo de probabilidade implícita, EV em porcentagem e filtro por EV mínimo.
+- Serviço de alerta apenas simulado, sem Telegram real, token ou rede.
+- Sugestão de stake por percentual fixo da banca.
+- Testes automatizados para services e API.
+- Dockerfile, Docker Compose e workflow de CI para rodar testes.
 
----
+## Tecnologias
 
-## O que é uma "value bet"?
+- Python 3.11+
+- FastAPI
+- Pydantic
+- Uvicorn
+- Streamlit
+- Pandas
+- Pytest
+- Docker e Docker Compose
 
-Toda odd de uma casa de apostas carrega uma **probabilidade implícita** (`1 / odd`).
-Se a **nossa estimativa** de probabilidade for *maior* do que essa implícita,
-existe uma vantagem matemática a nosso favor — o **valor esperado (EV)** fica
-positivo. Esse é o sinal que o projeto detecta e ranqueia.
+## Estrutura
 
-| Conceito | Fórmula | Exemplo (prob 55%, odd 2.00) |
-|----------|---------|------------------------------|
-| Prob. implícita | `1 / odd` | `0.50` (50%) |
-| Edge (vantagem) | `prob − implícita` | `+0.05` (+5%) |
-| Valor esperado (EV) | `prob × odd − 1` | `+0.10` (+10%) |
-| Fração de Kelly | `EV / (odd − 1)` | `0.10` (10% da banca) |
-
-A regra de ouro: **há valor quando `EV > 0`** (ou seja, quando achamos o evento
-mais provável do que a odd sugere).
-
----
-
-## Como rodar
-
-Pré-requisito: **Python 3.11+** (testado em 3.14).
-
-```bash
-# 1. clonar e entrar na pasta
-git clone <url-do-repo> valuebet-ai-portfolio-demo
-cd valuebet-ai-portfolio-demo
-
-# 2. criar o ambiente virtual e instalar as dependências
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-
-# 3. subir a aplicação
-.venv/bin/uvicorn app.main:app --reload
+```text
+app/
+├── api/                 # Rotas e schemas HTTP
+├── data/                # sample_odds.json com dados simulados
+├── services/            # Regras de negócio e cálculos reutilizáveis
+├── config.py            # Configuração por ambiente com defaults seguros
+├── main.py              # Aplicação FastAPI
+└── models.py            # Modelos Pydantic de domínio
+docs/
+├── architecture.md
+├── business_rules.md
+├── demo_walkthrough.md
+└── test_plan.md
+tests/                   # Testes automatizados
+dashboard.py             # Dashboard Streamlit
+Dockerfile
+docker-compose.yml
+pytest.ini
+requirements.txt
 ```
 
-Depois abra no navegador:
+## Fórmula de EV
 
-- **Dashboard:** http://127.0.0.1:8000
-- **Documentação interativa da API (Swagger):** http://127.0.0.1:8000/docs
+O projeto usa a odd de uma casa sharp como referência aproximada de
+probabilidade:
 
-Nenhuma chave de API ou configuração é necessária — a demo já vem com dados mock.
-
----
-
-## Endpoints da API
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| `GET` | `/api/health` | Checagem de saúde |
-| `GET` | `/api/matches` | Jogos crus (dados de entrada) |
-| `GET` | `/api/value-bets` | Value bets calculadas e ranqueadas por EV |
-
-O `/api/value-bets` aceita filtros via query string:
-
-| Parâmetro | Padrão | Exemplo |
-|-----------|--------|---------|
-| `min_ev` | `0.03` | `?min_ev=0.05` (só EV ≥ 5%) |
-| `min_odds` | `1.30` | `?min_odds=1.50` |
-| `max_odds` | `6.00` | `?max_odds=4.00` |
-| `sport` | — | `?sport=tennis` |
+```text
+probabilidade estimada = 1 / sharp_odds
+EV (%) = (probabilidade estimada * bookmaker_odds - 1) * 100
+```
 
 Exemplo:
 
+```text
+bookmaker_odds = 2.10
+sharp_odds = 1.85
+EV = ((1 / 1.85) * 2.10 - 1) * 100 = 13.51%
+```
+
+A resposta também exibe `implied_probability`, que neste projeto é a
+probabilidade implícita da odd da casa comum: `1 / bookmaker_odds`.
+
+Limitação metodológica: `1 / sharp_odds` é uma simplificação. Odds sharp também
+embutem margem da casa, o vig ou overround. Isso pode superestimar a
+probabilidade real e inflar o EV calculado. Em um produto real, o caminho seria
+remover essa margem com de-vig usando os dois lados do mercado antes de tratar a
+probabilidade como estimativa justa.
+
+## Instalação
+
 ```bash
-curl "http://127.0.0.1:8000/api/value-bets?sport=tennis&min_ev=0.05"
+python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
----
+Não é necessário criar `.env`. A demo funciona com os defaults de `app/config.py`.
+O arquivo `.env.example` existe apenas como referência para evolução futura.
 
-## Arquitetura
+## Rodar a API
 
-O projeto é dividido em **camadas** — cada uma com uma responsabilidade só, o que
-torna a lógica testável sem subir servidor. Detalhes em
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-```
-app/
-├── core/value.py            # matemática pura (EV, edge, Kelly) — sem dependências
-├── models/schemas.py        # modelos de dados (Pydantic)
-├── data/mock.py             # fonte de dados (mock determinístico)
-├── services/value_service.py# regras de negócio: filtra e ranqueia
-└── main.py                  # API FastAPI (camada fina) + serve o dashboard
-web/
-└── index.html               # dashboard (HTML + CSS + JS puro, sem build)
-tests/                       # 30 testes (núcleo, serviço, API)
+```bash
+.venv/bin/uvicorn app.main:app --reload
 ```
 
-Fluxo de uma requisição:
+Endpoints principais:
 
+- API: `http://127.0.0.1:8000`
+- Swagger: `http://127.0.0.1:8000/docs`
+- Health check: `http://127.0.0.1:8000/health`
+
+## Exemplos de chamadas
+
+```bash
+curl http://127.0.0.1:8000/health
 ```
-navegador → /api/value-bets → value_service → core/value + data/mock → JSON → dashboard
+
+```bash
+curl http://127.0.0.1:8000/odds
 ```
 
----
+```bash
+curl "http://127.0.0.1:8000/value-bets?min_ev=3.0"
+```
 
-## Testes
+```bash
+curl -X POST http://127.0.0.1:8000/calculate-ev \
+  -H "Content-Type: application/json" \
+  -d '{"bookmaker_odds":2.10,"sharp_odds":1.85}'
+```
+
+Resposta esperada para o último exemplo:
+
+```json
+{
+  "bookmaker_odds": 2.1,
+  "sharp_odds": 1.85,
+  "implied_probability": 0.4762,
+  "ev_percent": 13.51,
+  "is_value_bet": true
+}
+```
+
+## Rodar o dashboard
+
+```bash
+.venv/bin/streamlit run dashboard.py
+```
+
+O dashboard carrega `app/data/sample_odds.json` por meio de
+`app.services.odds_service`, aplica os filtros localmente e mostra métricas,
+tabela completa e tabela de value bets.
+
+## Rodar testes
 
 ```bash
 .venv/bin/python -m pytest -q
 ```
 
-São **30 testes** cobrindo a matemática, o serviço de ranqueamento e a API.
+## Rodar com Docker
 
----
+```bash
+docker compose up --build
+```
 
-## Decisões de design
+Depois acesse:
 
-- **Sem framework no front, sem build.** O dashboard é HTML/CSS/JS puro servido
-  pelo próprio FastAPI. `clone → install → run` e está no ar.
-- **Núcleo isolado.** `core/value.py` não importa nada do projeto; é matemática
-  pura e fácil de testar.
-- **Troca de fonte de dados num ponto só.** Toda a aplicação consome
-  `mock.get_matches()`. A demo é mock por design e não depende de serviços externos.
-- **Postura responsável.** Nenhuma promessa de lucro. A explicação de cada sinal
-  reforça que EV+ é estatística, não garantia.
-- **Dependências mínimas.** FastAPI, Uvicorn, Pydantic, Pytest. Nada além.
+- API: `http://localhost:8000`
+- Swagger: `http://localhost:8000/docs`
 
----
+## O que o projeto demonstra para recrutadores
 
-## Licença
+- Separação entre API, services, data, dashboard e testes.
+- Regras de negócio reutilizadas sem duplicação entre API e dashboard.
+- Uso responsável de dados simulados e ausência de dependências externas reais.
+- Contratos HTTP documentados com FastAPI e Pydantic.
+- Testes automatizados offline adequados para CI.
+- Entrega operável localmente com venv ou Docker.
 
-Uso educacional / portfólio.
+## Roadmap futuro
+
+- Implementar de-vig com mercados completos para reduzir viés de margem.
+- Persistir histórico local de sinais e resultados.
+- Adicionar autenticação e rate limiting se houver endpoints sensíveis.
+- Criar conectores mockáveis para fontes externas sem quebrar o modo offline.
+- Evoluir o dashboard com gráficos de distribuição de EV por esporte e mercado.

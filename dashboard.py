@@ -15,10 +15,7 @@ import streamlit as st
 from app import config
 from app.services import odds_service
 
-DISCLAIMER = (
-    "Este projeto é uma demonstração educacional de portfólio e não representa "
-    "recomendação financeira, promessa de lucro ou incentivo a apostas reais."
-)
+DISCLAIMER = "Este projeto é uma demonstração educacional de portfólio e não representa recomendação financeira, promessa de lucro ou incentivo a apostas reais."
 
 
 def build_dataframe(events: list[dict[str, Any]]) -> pd.DataFrame:
@@ -117,11 +114,11 @@ def main() -> None:
     render_metrics(filtered_odds, value_bets)
 
     st.subheader("Todas as odds enriquecidas")
-    st.dataframe(build_dataframe(filtered_odds), use_container_width=True, hide_index=True)
+    st.dataframe(build_dataframe(filtered_odds), width="stretch", hide_index=True)
 
     st.subheader(f"Value bets com EV >= {min_ev:.1f}%")
     if value_bets:
-        st.dataframe(build_dataframe(value_bets), use_container_width=True, hide_index=True)
+        st.dataframe(build_dataframe(value_bets), width="stretch", hide_index=True)
     else:
         st.info("Nenhuma oportunidade encontrada para os filtros atuais.")
 
