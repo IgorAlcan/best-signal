@@ -1,5 +1,8 @@
 # ValueBet AI — Demo de Portfólio
 
+<!-- Troque OWNER/REPO pelo seu usuário e repositório no GitHub para o badge funcionar. -->
+![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)
+
 Detector de **apostas de valor (EV+)** multi-esportes (tênis, futebol, basquete),
 construído com **FastAPI** + um dashboard em JavaScript puro.
 
