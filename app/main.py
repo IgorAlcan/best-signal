@@ -16,11 +16,17 @@ E acesse a documentação interativa em http://127.0.0.1:8000/docs
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI, Query
+from fastapi.staticfiles import StaticFiles
 
 from app.data import mock
 from app.models.schemas import Match, ValueBet
 from app.services import value_service as svc
+
+# Pasta com o dashboard (HTML/CSS/JS estáticos), na raiz do projeto.
+_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 app = FastAPI(
     title="ValueBet AI — Demo",
@@ -59,3 +65,8 @@ def list_value_bets(
     if sport is not None:
         bets = [b for b in bets if b.sport == sport]
     return bets
+
+
+# Serve o dashboard estático na raiz "/". Precisa vir DEPOIS das rotas /api,
+# senão o mount em "/" capturaria tudo. html=True faz "/" servir index.html.
+app.mount("/", StaticFiles(directory=_WEB_DIR, html=True), name="web")
