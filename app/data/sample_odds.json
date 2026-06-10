@@ -1,0 +1,145 @@
+[
+  {
+    "sport": "tennis",
+    "event": "Simulated Player A vs Simulated Player B",
+    "market": "match_winner",
+    "selection": "Simulated Player A",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 2.10,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 1.85,
+    "timestamp": "2026-06-10T18:30:00"
+  },
+  {
+    "sport": "tennis",
+    "event": "Simulated Player C vs Simulated Player D",
+    "market": "match_winner",
+    "selection": "Simulated Player C",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 1.80,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 1.90,
+    "timestamp": "2026-06-10T19:00:00"
+  },
+  {
+    "sport": "football",
+    "event": "Simulated FC vs Demo United",
+    "market": "match_winner",
+    "selection": "Simulated FC",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 3.40,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 3.10,
+    "timestamp": "2026-06-10T20:00:00"
+  },
+  {
+    "sport": "football",
+    "event": "Sample City vs Mock Rovers",
+    "market": "match_winner",
+    "selection": "Mock Rovers",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 2.50,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 2.55,
+    "timestamp": "2026-06-10T20:30:00"
+  },
+  {
+    "sport": "basketball",
+    "event": "Demo Lakers vs Sample Bulls",
+    "market": "match_winner",
+    "selection": "Demo Lakers",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 1.95,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 1.90,
+    "timestamp": "2026-06-10T21:00:00"
+  },
+  {
+    "sport": "basketball",
+    "event": "Mock Heat vs Demo Celtics",
+    "market": "match_winner",
+    "selection": "Mock Heat",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 2.20,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 2.00,
+    "timestamp": "2026-06-10T21:30:00"
+  },
+  {
+    "sport": "tennis",
+    "event": "Simulated Player E vs Simulated Player F",
+    "market": "match_winner",
+    "selection": "Simulated Player E",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 1.66,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 1.70,
+    "timestamp": "2026-06-11T15:00:00"
+  },
+  {
+    "sport": "football",
+    "event": "Demo Athletic vs Sample Wanderers",
+    "market": "match_winner",
+    "selection": "Demo Athletic",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 4.00,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 3.50,
+    "timestamp": "2026-06-11T16:00:00"
+  },
+  {
+    "sport": "basketball",
+    "event": "Sample Warriors vs Demo Nets",
+    "market": "match_winner",
+    "selection": "Sample Warriors",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 1.50,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 1.55,
+    "timestamp": "2026-06-11T16:30:00"
+  },
+  {
+    "sport": "tennis",
+    "event": "Simulated Player G vs Simulated Player H",
+    "market": "match_winner",
+    "selection": "Simulated Player G",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 2.05,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 2.00,
+    "timestamp": "2026-06-11T17:00:00"
+  },
+  {
+    "sport": "football",
+    "event": "Mock Rangers vs Demo County",
+    "market": "match_winner",
+    "selection": "Mock Rangers",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 2.90,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 2.70,
+    "timestamp": "2026-06-11T18:00:00"
+  },
+  {
+    "sport": "basketball",
+    "event": "Demo Spurs vs Sample Suns",
+    "market": "match_winner",
+    "selection": "Demo Spurs",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 3.10,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 3.30,
+    "timestamp": "2026-06-11T18:30:00"
+  },
+  {
+    "sport": "tennis",
+    "event": "Simulated Player I vs Simulated Player J",
+    "market": "match_winner",
+    "selection": "Simulated Player I",
+    "bookmaker": "DemoBook",
+    "bookmaker_odds": 1.95,
+    "sharp_bookmaker": "SharpDemo",
+    "sharp_odds": 1.80,
+    "timestamp": "2026-06-11T19:00:00"
+  }
+]

@@ -1,4 +1,4 @@
-"""Testes da API FastAPI (app/main.py), usando o TestClient."""
+"""Testes da API FastAPI (app/main.py + app/api/routes.py)."""
 
 from fastapi.testclient import TestClient
 
@@ -7,42 +7,48 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_health_responde_ok():
-    r = client.get("/api/health")
+def test_health_retorna_200():
+    r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["status"] == "ok"
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["project"] == "ValueBetAI Portfolio Demo"
 
 
-def test_matches_lista_os_jogos():
-    r = client.get("/api/matches")
+def test_odds_retorna_lista_enriquecida():
+    r = client.get("/odds")
     assert r.status_code == 200
-    jogos = r.json()
-    assert len(jogos) == 5
-    assert jogos[0]["sport"] in {"tennis", "soccer", "basketball"}
+    odds = r.json()
+    assert isinstance(odds, list)
+    assert len(odds) >= 12
+    assert "ev_percent" in odds[0]
+    assert "is_value_bet" in odds[0]
 
 
-def test_value_bets_vem_ordenado_por_ev():
-    r = client.get("/api/value-bets")
+def test_value_bets_retorna_lista():
+    r = client.get("/value-bets")
     assert r.status_code == 200
     bets = r.json()
-    assert len(bets) > 0
-    evs = [b["ev"] for b in bets]
-    assert evs == sorted(evs, reverse=True)
+    assert isinstance(bets, list)
+    assert all(b["is_value_bet"] for b in bets)
 
 
 def test_value_bets_respeita_min_ev():
-    r = client.get("/api/value-bets", params={"min_ev": 0.10})
+    r = client.get("/value-bets", params={"min_ev": 10.0})
     assert r.status_code == 200
-    assert all(b["ev"] >= 0.10 for b in r.json())
+    assert all(b["ev_percent"] >= 10.0 for b in r.json())
 
 
-def test_value_bets_filtra_por_esporte():
-    r = client.get("/api/value-bets", params={"sport": "tennis"})
+def test_calculate_ev_retorna_ev_correto():
+    r = client.post("/calculate-ev", json={"bookmaker_odds": 2.10, "sharp_odds": 1.85})
     assert r.status_code == 200
-    assert all(b["sport"] == "tennis" for b in r.json())
+    body = r.json()
+    assert body["ev_percent"] == 13.51
+    assert body["is_value_bet"] is True
+    assert body["implied_probability"] == 0.4762  # 1 / 2.10 (odd da casa comum)
 
 
-def test_value_bets_rejeita_parametro_invalido():
-    # min_odds deve ser > 1.0; 0.5 é inválido -> 422 do FastAPI
-    r = client.get("/api/value-bets", params={"min_odds": 0.5})
+def test_calculate_ev_valida_odds_invalidas():
+    # odds <= 1 são rejeitadas pelo schema Pydantic -> HTTP 422
+    r = client.post("/calculate-ev", json={"bookmaker_odds": 1.0, "sharp_odds": 1.85})
     assert r.status_code == 422
