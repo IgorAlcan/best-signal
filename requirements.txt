@@ -1,0 +1,11 @@
+# Dependências mínimas (wheels disponíveis para Python 3.14).
+# Usamos ">=" e não pinos exatos para evitar versões antigas de pydantic-core
+# que não compilam no Python 3.14.
+
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+
+# Desenvolvimento / testes
+pytest>=8.3
+httpx>=0.27          # usado pelo TestClient do FastAPI
