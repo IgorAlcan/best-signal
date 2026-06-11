@@ -1,0 +1,11 @@
+# Tema base do Streamlit (dark fintech).
+# Garante que os widgets nativos (sidebar, slider, tabelas) já nasçam escuros,
+# para o CSS customizado do dashboard só precisar dar o acabamento.
+
+[theme]
+base = "dark"
+primaryColor = "#3b82f6"
+backgroundColor = "#0a0e17"
+secondaryBackgroundColor = "#131a27"
+textColor = "#e8eef7"
+font = "sans serif"
