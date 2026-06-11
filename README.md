@@ -10,11 +10,18 @@ em um dashboard sem depender de serviços externos.
 
 > **Aviso obrigatório:** Este projeto é uma demonstração educacional de portfólio e não representa recomendação financeira, promessa de lucro ou incentivo a apostas reais.
 
-![Dashboard BestSignal](docs/dashboard.png)
+![Interface web BestSignal](docs/web.png)
+
+> O projeto tem **duas interfaces** sobre os mesmos services (sem lógica duplicada):
+> uma **interface web** (HTML/CSS/JS puro) servida pela própria API em `/`, e um
+> **dashboard Streamlit** (`dashboard.py`) — veja [docs/dashboard.png](docs/dashboard.png).
 
 ## Funcionalidades
 
-- API FastAPI com endpoints de saúde, odds enriquecidas, value bets e cálculo de EV.
+- API FastAPI com endpoints de saúde, odds enriquecidas, value bets, cálculo de EV,
+  alertas simulados e sugestão de stake.
+- Interface web (HTML/CSS/JS puro) servida pela própria API e consumindo-a por
+  `fetch`, com gráfico de dispersão EV × odd feito em SVG (sem dependências).
 - Dashboard Streamlit que importa os services diretamente, sem chamada HTTP interna.
 - Dados offline em `app/data/sample_odds.json`, com eventos simulados de tennis,
   football e basketball.
@@ -102,9 +109,9 @@ O arquivo `.env.example` existe apenas como referência para evolução futura.
 .venv/bin/uvicorn app.main:app --reload
 ```
 
-Endpoints principais:
+Acesse:
 
-- API: `http://127.0.0.1:8000`
+- **Interface web:** `http://127.0.0.1:8000/`
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/health`
 

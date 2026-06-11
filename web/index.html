@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BestSignal — Análise de Value Bets (EV+)</title>
+  <meta name="description" content="Demo de portfólio: detecção de apostas de valor (EV+) sobre dados simulados. FastAPI + frontend puro." />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%233b82f6'/><path d='M9 21l5-10 3 6 6-9' stroke='%23071226' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+</head>
+<body>
+  <!-- Navegação -->
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#3b82f6" />
+          <path d="M8 21l5-9 3 5 8-11" stroke="#071226" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>Best<b>Signal</b></span>
+      </div>
+      <div class="nav-links">
+        <a href="#metodologia">Metodologia</a>
+        <a href="/docs" target="_blank" rel="noopener">API · Swagger</a>
+        <a class="nav-pill" href="#">100% mock</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <!-- Hero -->
+    <header class="hero reveal">
+      <h1>Encontre o <b>valor</b> escondido nas odds.</h1>
+      <p class="lead">
+        Painel de análise de apostas de valor (EV+) sobre dados simulados. Compara a
+        odd de uma casa comum com uma casa de referência (sharp), calcula o valor
+        esperado e separa os sinais positivos — com a metodologia explicada de forma
+        transparente.
+      </p>
+      <div class="pills">
+        <span class="pill"><i class="dot"></i> feed local · <span id="pill-events">—</span> eventos</span>
+        <span class="pill green"><i class="dot"></i> consome a API por HTTP</span>
+        <span class="pill"><i class="dot"></i> sem execução real</span>
+      </div>
+      <div class="disclaimer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span>Demonstração educacional de portfólio. Não representa recomendação financeira, promessa de lucro ou incentivo a apostas reais. Dados fictícios (mock).</span>
+      </div>
+    </header>
+
+    <!-- KPIs -->
+    <section aria-label="Métricas">
+      <div class="kpis" id="kpis">
+        <div class="kpi"><div class="kpi-label">Eventos analisados</div><div class="kpi-value" id="kpi-events">—</div></div>
+        <div class="kpi"><div class="kpi-label">Sinais de valor (EV+)</div><div class="kpi-value green" id="kpi-value">—</div><div class="kpi-sub" id="kpi-rate">—</div></div>
+        <div class="kpi"><div class="kpi-label">Maior EV</div><div class="kpi-value green" id="kpi-best">—</div></div>
+        <div class="kpi"><div class="kpi-label">Esporte líder</div><div class="kpi-value" id="kpi-leader">—</div></div>
+      </div>
+    </section>
+
+    <!-- Controles -->
+    <section aria-label="Filtros">
+      <div class="controls">
+        <div class="control">
+          <label>Esporte</label>
+          <div class="segmented" id="sport-seg" role="tablist">
+            <button class="active" data-sport="todos">Todos</button>
+            <button data-sport="tennis">Tênis</button>
+            <button data-sport="football">Futebol</button>
+            <button data-sport="basketball">Basquete</button>
+          </div>
+        </div>
+        <div class="control">
+          <label for="minev">EV mínimo</label>
+          <input type="range" id="minev" min="0" max="15" step="0.5" value="3" />
+          <span class="ev-readout" id="minev-out">3.0%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gráfico + oportunidade -->
+    <section>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Edge: EV × odd</h3>
+          <p class="muted" style="font-size:0.84rem;margin-bottom:8px;">
+            Cada ponto é uma seleção. Acima da linha zero o valor está a favor; a linha âmbar é o corte de EV mínimo. Verde = passa no corte.
+          </p>
+          <div class="scatter-wrap">
+            <div id="scatter"></div>
+            <div class="tooltip" id="tooltip"></div>
+          </div>
+          <div class="legend">
+            <span><i style="background:#2dd4a7"></i> EV+ (valor)</span>
+            <span><i style="background:#5d6b80"></i> Sem valor</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="panel callout" id="top-bet">
+            <h3>Maior oportunidade</h3>
+            <p class="muted skeleton">carregando…</p>
+          </div>
+          <div class="panel callout amber">
+            <h3>Gestão de banca</h3>
+            <p class="muted" style="font-size:0.84rem;">Percentual fixo da banca (fixed fractional) — via <code style="font-size:0.76rem;">POST /suggest-stake</code>.</p>
+            <div class="bankroll" style="margin-top:12px;">
+              <div class="field"><label for="bankroll">Banca (R$)</label><input type="number" id="bankroll" value="1000" min="1" step="50" /></div>
+              <div class="field"><label for="risk">Risco (%)</label><input type="number" id="risk" value="1" min="0.5" max="100" step="0.5" /></div>
+              <div class="stake-out" id="stake">R$ —<small>STAKE SUGERIDA</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabela de sinais -->
+    <section>
+      <div class="section-head">
+        <h2>Sinais EV+ <span id="vb-count" class="hint"></span></h2>
+        <span class="hint">ordenado por EV</span>
+      </div>
+      <div class="table-wrap">
+        <table id="vb-table">
+          <thead>
+            <tr>
+              <th>Esporte</th><th>Evento</th><th>Seleção</th>
+              <th style="text-align:right">Odd casa</th><th style="text-align:right">Odd sharp</th>
+              <th style="text-align:right">Prob. impl.</th><th style="text-align:right">EV (%)</th>
+            </tr>
+          </thead>
+          <tbody id="vb-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Alertas -->
+    <section>
+      <div class="section-head"><h2>Alertas simulados</h2><span class="hint">GET /alerts</span></div>
+      <div class="panel">
+        <p class="muted" style="font-size:0.86rem;">Texto que um sistema real dispararia. Nada é enviado (sem Telegram, token ou rede).</p>
+        <div class="alert-box" id="alert-box">carregando…</div>
+      </div>
+    </section>
+
+    <!-- Metodologia -->
+    <section id="metodologia">
+      <div class="section-head"><h2>Metodologia</h2></div>
+      <div class="method-grid">
+        <div class="panel">
+          <h3>Modelo de EV</h3>
+          <p class="muted">A demo usa a odd sharp como referência aproximada de probabilidade:</p>
+          <p><code>probabilidade = 1 / sharp_odds</code></p>
+          <p><code>EV (%) = (probabilidade × bookmaker_odds − 1) × 100</code></p>
+          <p class="muted">Exemplo: casa 2.10 e sharp 1.85 → <strong style="color:var(--signal)">+13.51%</strong>.</p>
+        </div>
+        <div class="panel callout amber">
+          <h3>Vig embutido (limite honesto)</h3>
+          <p class="muted">Usar <code>1 / sharp_odds</code> é uma simplificação: a odd sharp também embute a margem da casa (vig/overround), então a probabilidade estimada fica alta demais e o EV tende a ser inflado.</p>
+          <p class="muted">Em produção, o ideal seria remover essa margem (de-vig) usando os dois lados do mercado.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Evidências -->
+    <section>
+      <div class="section-head"><h2>Evidências para revisão técnica</h2></div>
+      <div class="proof">
+        <div class="panel"><h3>Regra centralizada</h3><p class="muted">API e interfaces consomem os mesmos services; o EV não é recalculado na camada de apresentação.</p></div>
+        <div class="panel"><h3>Demo auditável</h3><p class="muted">Dados simulados, sem segredo, sem scraping e com testes offline reproduzíveis.</p></div>
+        <div class="panel"><h3>Entrega operável</h3><p class="muted">FastAPI, Swagger, frontend puro, Streamlit, Docker e CI organizados para avaliação rápida.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot" id="foot">BestSignal · FastAPI · HTML/CSS/JS · 100% mock · demo educacional, sem recomendação financeira</div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

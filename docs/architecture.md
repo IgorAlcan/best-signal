@@ -41,6 +41,10 @@ percentual fixo.
 `app/config.py`: lê configurações simples por ambiente, com defaults seguros. A
 demo roda sem `.env`.
 
+`web/`: interface web estática (HTML/CSS/JS puro, sem build) servida pela própria
+API em `/`. Diferente do dashboard, ela consome a API por HTTP (`fetch`), exercendo
+o papel de cliente real. Gráfico de dispersão EV × odd desenhado em SVG, sem libs.
+
 `dashboard.py`: interface Streamlit para explorar os dados enriquecidos. Importa
 `odds_service` e `config` diretamente.
 
