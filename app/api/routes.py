@@ -9,9 +9,15 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
-from app.api.schemas import CalculateEVRequest, CalculateEVResponse
+from app.api.schemas import (
+    AlertPreview,
+    CalculateEVRequest,
+    CalculateEVResponse,
+    StakeRequest,
+    StakeResponse,
+)
 from app.config import MIN_EV_PERCENT, PROJECT_NAME
-from app.services import ev_calculator, odds_service
+from app.services import alert_service, bankroll_service, ev_calculator, odds_service
 
 router = APIRouter()
 
@@ -49,4 +55,37 @@ def calculate_ev(payload: CalculateEVRequest) -> CalculateEVResponse:
         is_value_bet=ev_calculator.is_value_bet(
             payload.bookmaker_odds, payload.sharp_odds, payload.min_ev
         ),
+    )
+
+
+@router.get("/alerts", response_model=list[AlertPreview], tags=["alerts"])
+def get_alerts(
+    min_ev: float = Query(MIN_EV_PERCENT, description="EV mínimo em % (ex.: 3.0)"),
+) -> list[AlertPreview]:
+    """Pré-visualização SIMULADA dos alertas das value bets atuais.
+
+    Nenhuma mensagem é enviada (sem Telegram, token ou rede): apenas montamos o
+    texto que um sistema real dispararia.
+    """
+    odds = odds_service.load_sample_odds()
+    value_bets = odds_service.get_value_bets(odds, min_ev)
+    return [
+        AlertPreview(
+            sport=bet["sport"],
+            event=bet["event"],
+            selection=bet["selection"],
+            ev_percent=bet["ev_percent"],
+            message=alert_service.build_alert_message(bet),
+        )
+        for bet in value_bets
+    ]
+
+
+@router.post("/suggest-stake", response_model=StakeResponse, tags=["bankroll"])
+def suggest_stake(payload: StakeRequest) -> StakeResponse:
+    """Sugere o valor da aposta como percentual fixo da banca (gestão de risco)."""
+    return StakeResponse(
+        bankroll=payload.bankroll,
+        risk_percent=payload.risk_percent,
+        stake=bankroll_service.suggest_stake(payload.bankroll, payload.risk_percent),
     )

@@ -19,3 +19,7 @@ bestsignal.db
 .vscode/
 .idea/
 .DS_Store
+
+# Tooling de agentes (não faz parte do projeto)
+.agents/
+skills-lock.json

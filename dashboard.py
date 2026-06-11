@@ -18,7 +18,7 @@ import pandas as pd
 import streamlit as st
 
 from app import config
-from app.services import odds_service
+from app.services import alert_service, bankroll_service, odds_service
 
 DISCLAIMER = "Este projeto é uma demonstração educacional de portfólio e não representa recomendação financeira, promessa de lucro ou incentivo a apostas reais."
 SPORT_OPTIONS = ["todos", "tennis", "football", "basketball"]
@@ -433,6 +433,14 @@ def render_sidebar() -> tuple[str, float]:
         )
 
         st.divider()
+        st.subheader("Gestão de banca")
+        bankroll = st.number_input("Banca (R$)", min_value=1.0, value=1000.0, step=50.0)
+        risk = st.slider("Risco por aposta (%)", min_value=0.5, max_value=5.0, value=1.0, step=0.5)
+        stake = bankroll_service.suggest_stake(bankroll, risk)
+        st.metric("Stake sugerida", f"R$ {stake:,.2f}")
+        st.caption("Percentual fixo da banca (fixed fractional).")
+
+        st.divider()
         st.subheader("Como ler")
         st.caption("EV+ = valor esperado positivo, em porcentagem.")
         st.caption("Fonte: app/data/sample_odds.json (offline).")
@@ -518,6 +526,8 @@ def render_overview(events: list[dict[str, Any]], value_bets: list[dict[str, Any
                 """,
                 unsafe_allow_html=True,
             )
+            with st.expander("Pré-visualizar alerta (simulado)"):
+                st.code(alert_service.build_alert_message(top_bet), language="text")
         else:
             st.markdown(
                 """

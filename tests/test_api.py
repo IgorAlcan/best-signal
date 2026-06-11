@@ -52,3 +52,25 @@ def test_calculate_ev_valida_odds_invalidas():
     # odds <= 1 são rejeitadas pelo schema Pydantic -> HTTP 422
     r = client.post("/calculate-ev", json={"bookmaker_odds": 1.0, "sharp_odds": 1.85})
     assert r.status_code == 422
+
+
+def test_alerts_retorna_mensagens_simuladas():
+    r = client.get("/alerts")
+    assert r.status_code == 200
+    alerts = r.json()
+    assert len(alerts) > 0
+    assert all("Alert" in a["message"] for a in alerts)
+    assert all("Status:" in a["message"] for a in alerts)
+
+
+def test_suggest_stake_calcula_valor():
+    r = client.post("/suggest-stake", json={"bankroll": 1000, "risk_percent": 1.0})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["stake"] == 10.0
+
+
+def test_suggest_stake_valida_bankroll_invalido():
+    # bankroll <= 0 é rejeitado pelo schema Pydantic -> HTTP 422
+    r = client.post("/suggest-stake", json={"bankroll": 0, "risk_percent": 1.0})
+    assert r.status_code == 422

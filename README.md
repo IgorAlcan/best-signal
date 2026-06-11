@@ -1,11 +1,16 @@
 # BestSignal Portfolio Demo
 
+<!-- Troque OWNER/REPO pelo seu usuário e repositório no GitHub para o badge funcionar. -->
+![CI](https://github.com/OWNER/REPO/actions/workflows/tests.yml/badge.svg)
+
 Demo educacional de detecção de value bets com FastAPI, Streamlit e dados 100%
 simulados. O projeto mostra uma arquitetura simples para carregar odds mockadas,
 calcular EV em porcentagem, expor uma API documentada e visualizar oportunidades
 em um dashboard sem depender de serviços externos.
 
 > **Aviso obrigatório:** Este projeto é uma demonstração educacional de portfólio e não representa recomendação financeira, promessa de lucro ou incentivo a apostas reais.
+
+![Dashboard BestSignal](docs/dashboard.png)
 
 ## Funcionalidades
 
@@ -133,6 +138,20 @@ Resposta esperada para o último exemplo:
   "ev_percent": 13.51,
   "is_value_bet": true
 }
+```
+
+Pré-visualizar os alertas simulados das value bets (nada é enviado de verdade):
+
+```bash
+curl http://127.0.0.1:8000/alerts
+```
+
+Sugestão de stake por percentual fixo da banca:
+
+```bash
+curl -X POST http://127.0.0.1:8000/suggest-stake \
+  -H "Content-Type: application/json" \
+  -d '{"bankroll":1000,"risk_percent":1.0}'
 ```
 
 ## Rodar o dashboard
