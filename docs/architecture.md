@@ -4,7 +4,7 @@
 
 ## Visão geral
 
-O ValueBetAI Portfolio Demo é dividido em camadas pequenas para manter a regra de
+O BestSignal Portfolio Demo é dividido em camadas pequenas para manter a regra de
 negócio testável e reutilizável. A API e o dashboard usam os mesmos services; o
 dashboard não chama HTTP nem recalcula EV por conta própria.
 

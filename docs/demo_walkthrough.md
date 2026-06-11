@@ -4,7 +4,7 @@
 
 ## Pitch curto
 
-ValueBetAI Portfolio Demo é uma aplicação Python 100% offline que simula uma
+BestSignal Portfolio Demo é uma aplicação Python 100% offline que simula uma
 esteira de análise de value bets. Ela carrega odds mockadas, calcula EV em
 porcentagem, expõe uma API FastAPI e oferece um dashboard Streamlit que reutiliza
 os mesmos services da API.

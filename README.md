@@ -1,4 +1,4 @@
-# ValueBetAI Portfolio Demo
+# BestSignal Portfolio Demo
 
 Demo educacional de detecção de value bets com FastAPI, Streamlit e dados 100%
 simulados. O projeto mostra uma arquitetura simples para carregar odds mockadas,

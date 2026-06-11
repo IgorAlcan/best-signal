@@ -12,7 +12,7 @@ def test_health_retorna_200():
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "ok"
-    assert body["project"] == "ValueBetAI Portfolio Demo"
+    assert body["project"] == "BestSignal Portfolio Demo"
 
 
 def test_odds_retorna_lista_enriquecida():

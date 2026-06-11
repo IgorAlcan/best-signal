@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 
 # Nome do projeto, exposto na API e no dashboard.
-PROJECT_NAME: str = "ValueBetAI Portfolio Demo"
+PROJECT_NAME: str = "BestSignal Portfolio Demo"
 
 # Ambiente: development (padrão) / production etc.
 APP_ENV: str = os.getenv("APP_ENV", "development")

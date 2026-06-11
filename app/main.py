@@ -1,5 +1,5 @@
 """
-API FastAPI do ValueBetAI Portfolio Demo.
+API FastAPI do BestSignal Portfolio Demo.
 
 Ponto de entrada da aplicação web. Monta o app e inclui as rotas definidas em
 app/api/routes.py. A interface visual fica no dashboard Streamlit (dashboard.py),

@@ -20,7 +20,7 @@ def build_alert_message(value_bet: dict) -> str:
     market = _humanize(str(value_bet["market"]))
 
     return (
-        "🚨 ValueBetAI Alert\n"
+        "🚨 BestSignal Alert\n"
         "\n"
         f"Sport: {sport}\n"
         f"Event: {value_bet['event']}\n"

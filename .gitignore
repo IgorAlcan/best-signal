@@ -9,7 +9,7 @@ venv/
 .mypy_cache/
 .coverage
 htmlcov/
-valuebet.db
+bestsignal.db
 
 # Ambiente / segredos
 .env

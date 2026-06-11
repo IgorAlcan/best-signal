@@ -1,4 +1,4 @@
-"""Dashboard Streamlit da demo ValueBetAI.
+"""Dashboard Streamlit da demo BestSignal.
 
 O dashboard consome os services diretamente para manter a regra de negócio em um
 lugar só. Não há chamada HTTP, scraping, API externa ou envio real de alerta.
@@ -395,7 +395,7 @@ def render_header(total_events: int) -> None:
         f"""
         <div class="app-header">
             <div class="app-kicker">Mesa de análise · dados simulados · EV em %</div>
-            <h1 class="app-title">ValueBet<span>AI</span></h1>
+            <h1 class="app-title">Best<span>Signal</span></h1>
             <p class="app-subtitle">
                 Painel de análise de apostas de valor (EV+) sobre dados simulados.
                 Compara odds de casas comuns com uma casa de referência (sharp),

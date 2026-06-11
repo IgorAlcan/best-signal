@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "valuebet-api",
+      "name": "bestsignal-api",
       "runtimeExecutable": ".venv/bin/uvicorn",
       "runtimeArgs": ["app.main:app", "--port", "8000"],
       "port": 8000
