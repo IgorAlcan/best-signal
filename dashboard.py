@@ -315,8 +315,16 @@ def inject_page_style() -> None:
 
 
 def build_dataframe(events: list[dict[str, Any]]) -> pd.DataFrame:
-    """Monta um DataFrame com colunas em ordem amigável para leitura."""
-    return pd.DataFrame(events, columns=VISIBLE_COLUMNS)
+    """Monta um DataFrame com colunas em ordem amigável para leitura.
+
+    Traduz o esporte e humaniza o mercado para manter o idioma consistente (PT)
+    com o resto da interface.
+    """
+    df = pd.DataFrame(events, columns=VISIBLE_COLUMNS)
+    if not df.empty:
+        df["sport"] = df["sport"].map(lambda s: SPORT_LABELS.get(s, s))
+        df["market"] = df["market"].map(lambda m: str(m).replace("_", " ").title())
+    return df
 
 
 def filter_by_sport(events: list[dict[str, Any]], sport: str) -> list[dict[str, Any]]:
@@ -499,11 +507,12 @@ def render_metrics(events: list[dict[str, Any]], value_bets: list[dict[str, Any]
     metric_cols[3].metric("Esporte líder", sport_with_most_opportunities(value_bets))
 
 
-def render_ev_scatter(events: list[dict[str, Any]]) -> None:
+def render_ev_scatter(events: list[dict[str, Any]], min_ev: float) -> None:
     """Gráfico interativo do 'edge': EV (%) versus odd da casa.
 
     Cada ponto é uma seleção. Acima da linha tracejada (EV = 0) o valor está a
-    nosso favor; verde = passa no corte de EV mínimo. Hover mostra o detalhe.
+    nosso favor; a linha âmbar marca o corte de EV mínimo escolhido no filtro;
+    verde = passa no corte. O tamanho do ponto cresce com a força do sinal.
     """
     if not events:
         st.info("Nenhum evento encontrado para os filtros atuais.")
@@ -511,12 +520,16 @@ def render_ev_scatter(events: list[dict[str, Any]]) -> None:
 
     df = pd.DataFrame(events)
     df["Sinal"] = df["is_value_bet"].map({True: "EV+ (valor)", False: "Sem valor"})
+    # Tamanho do ponto = força do sinal (|EV|), com piso para nunca sumir.
+    df["forca"] = df["ev_percent"].abs() + 2.0
 
     fig = px.scatter(
         df,
         x="bookmaker_odds",
         y="ev_percent",
         color="Sinal",
+        size="forca",
+        size_max=20,
         color_discrete_map={"EV+ (valor)": "#2dd4a7", "Sem valor": "#5d6b80"},
         hover_name="event",
         hover_data={
@@ -524,12 +537,23 @@ def render_ev_scatter(events: list[dict[str, Any]]) -> None:
             "sharp_odds": ":.2f",
             "bookmaker_odds": ":.2f",
             "ev_percent": ":.2f",
+            "forca": False,
             "Sinal": False,
         },
         labels={"bookmaker_odds": "Odd da casa", "ev_percent": "EV (%)"},
     )
-    fig.add_hline(y=0, line_dash="dash", line_color="#8696ad", opacity=0.6)
-    fig.update_traces(marker=dict(size=13, line=dict(width=1, color="#0a0e17")))
+    fig.add_hline(y=0, line_dash="dash", line_color="#8696ad", opacity=0.5)
+    if min_ev > 0:
+        fig.add_hline(
+            y=min_ev,
+            line_dash="dot",
+            line_color="#f59e0b",
+            opacity=0.7,
+            annotation_text=f"corte {min_ev:.1f}%",
+            annotation_position="top left",
+            annotation_font_color="#f59e0b",
+        )
+    fig.update_traces(marker=dict(line=dict(width=1, color="#0a0e17")))
     fig.update_layout(
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
@@ -544,13 +568,15 @@ def render_ev_scatter(events: list[dict[str, Any]]) -> None:
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
-def render_overview(events: list[dict[str, Any]], value_bets: list[dict[str, Any]]) -> None:
+def render_overview(
+    events: list[dict[str, Any]], value_bets: list[dict[str, Any]], min_ev: float
+) -> None:
     """Mostra resumo visual do recorte atual."""
     left, right = st.columns([1.15, 0.85], gap="large")
 
     with left:
         st.subheader("Edge: EV × odd")
-        render_ev_scatter(events)
+        render_ev_scatter(events, min_ev)
         summary = build_sport_summary(events)
         if not summary.empty:
             st.caption(summarize_sport_chart(summary))
@@ -693,6 +719,18 @@ def render_formula_block() -> None:
         )
 
 
+def render_footer() -> None:
+    """Rodapé com stack e reforço do aviso responsável."""
+    st.markdown(
+        '<div style="color:#5d6b80;font-family:var(--data-font);font-size:0.8rem;'
+        'text-align:center;padding-top:0.5rem;">'
+        f"{escape(config.PROJECT_NAME)} · FastAPI · Streamlit · Plotly · 100% mock · "
+        "demo educacional, sem recomendação financeira"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def main() -> None:
     """Renderiza a aplicação Streamlit."""
     st.set_page_config(page_title=config.PROJECT_NAME, page_icon="📊", layout="wide")
@@ -707,8 +745,11 @@ def main() -> None:
     render_header(total_events=len(raw_odds))
     render_metrics(filtered_odds, value_bets)
     render_market_tape(value_bets)
-    render_overview(filtered_odds, value_bets)
+    st.divider()
+    render_overview(filtered_odds, value_bets, min_ev)
+    st.divider()
     render_recruiter_proof()
+    st.divider()
 
     tabs = st.tabs(["Sinais EV+", "Tabela completa", "Metodologia"])
     with tabs[0]:
@@ -724,6 +765,8 @@ def main() -> None:
             não representam mercado real.
             """
         )
+
+    render_footer()
 
 
 if __name__ == "__main__":
