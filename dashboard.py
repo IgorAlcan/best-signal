@@ -15,6 +15,7 @@ from html import escape
 from typing import Any
 
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from app import config
@@ -383,7 +384,10 @@ def get_column_config() -> dict[str, Any]:
         "sharp_bookmaker": st.column_config.TextColumn("Sharp"),
         "sharp_odds": st.column_config.NumberColumn("Odd sharp", format="%.2f"),
         "implied_probability": st.column_config.NumberColumn("Prob. implícita", format="%.4f"),
-        "ev_percent": st.column_config.NumberColumn("EV (%)", format="%.2f"),
+        # ProgressColumn: barra preenchida torna o EV de leitura imediata.
+        "ev_percent": st.column_config.ProgressColumn(
+            "EV (%)", format="%.2f%%", min_value=-10.0, max_value=15.0
+        ),
         "is_value_bet": st.column_config.CheckboxColumn("EV+"),
         "timestamp": st.column_config.TextColumn("Coleta"),
     }
@@ -495,19 +499,60 @@ def render_metrics(events: list[dict[str, Any]], value_bets: list[dict[str, Any]
     metric_cols[3].metric("Esporte líder", sport_with_most_opportunities(value_bets))
 
 
+def render_ev_scatter(events: list[dict[str, Any]]) -> None:
+    """Gráfico interativo do 'edge': EV (%) versus odd da casa.
+
+    Cada ponto é uma seleção. Acima da linha tracejada (EV = 0) o valor está a
+    nosso favor; verde = passa no corte de EV mínimo. Hover mostra o detalhe.
+    """
+    if not events:
+        st.info("Nenhum evento encontrado para os filtros atuais.")
+        return
+
+    df = pd.DataFrame(events)
+    df["Sinal"] = df["is_value_bet"].map({True: "EV+ (valor)", False: "Sem valor"})
+
+    fig = px.scatter(
+        df,
+        x="bookmaker_odds",
+        y="ev_percent",
+        color="Sinal",
+        color_discrete_map={"EV+ (valor)": "#2dd4a7", "Sem valor": "#5d6b80"},
+        hover_name="event",
+        hover_data={
+            "selection": True,
+            "sharp_odds": ":.2f",
+            "bookmaker_odds": ":.2f",
+            "ev_percent": ":.2f",
+            "Sinal": False,
+        },
+        labels={"bookmaker_odds": "Odd da casa", "ev_percent": "EV (%)"},
+    )
+    fig.add_hline(y=0, line_dash="dash", line_color="#8696ad", opacity=0.6)
+    fig.update_traces(marker=dict(size=13, line=dict(width=1, color="#0a0e17")))
+    fig.update_layout(
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Fira Sans, sans-serif", color="#e8eef7"),
+        height=320,
+        margin=dict(l=8, r=8, t=8, b=8),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=""),
+    )
+    fig.update_xaxes(gridcolor="#233047", zeroline=False)
+    fig.update_yaxes(gridcolor="#233047", zeroline=False)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
 def render_overview(events: list[dict[str, Any]], value_bets: list[dict[str, Any]]) -> None:
     """Mostra resumo visual do recorte atual."""
     left, right = st.columns([1.15, 0.85], gap="large")
 
     with left:
-        st.subheader("Oportunidades por esporte")
+        st.subheader("Edge: EV × odd")
+        render_ev_scatter(events)
         summary = build_sport_summary(events)
-        if summary.empty:
-            st.info("Nenhum evento encontrado para os filtros atuais.")
-        else:
-            chart_data = summary.set_index("sport")[["events", "value_bets"]]
-            chart_data.columns = ["Eventos", "Sinais EV+"]
-            st.bar_chart(chart_data, color=["#3b82f6", "#2dd4a7"], height=280)
+        if not summary.empty:
             st.caption(summarize_sport_chart(summary))
 
     with right:
