@@ -1,5 +1,5 @@
 /* ==========================================================================
-   BestSignal — lógica da interface web.
+   BestSignal - lógica da interface web.
    Consome a API FastAPI por HTTP (fetch) e renderiza tudo no cliente.
    Sem framework e sem build: JS puro.
    ========================================================================== */
@@ -12,9 +12,20 @@ const state = { all: [], sport: "todos", minEv: 3.0 };
 
 // ---- Helpers ---------------------------------------------------------------
 const $ = (sel) => document.querySelector(sel);
-const pct = (x) => `${Number(x).toFixed(2)}%`;
+const signedPct = (x, digits = 2) => `${Number(x) >= 0 ? "+" : ""}${Number(x).toFixed(digits)}%`;
 const money = (x) => `R$ ${Number(x).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function setText(sel, value) {
+  const el = $(sel);
+  const next = String(value);
+  if (!el || el.textContent === next) return;
+  el.textContent = next;
+  el.classList.remove("value-flash");
+  // Restart the micro-animation only when the value actually changes.
+  void el.offsetWidth;
+  el.classList.add("value-flash");
+}
 
 async function fetchJSON(url, options) {
   const res = await fetch(url, options);
@@ -39,20 +50,60 @@ function renderKPIs() {
   const best = events.length ? Math.max(...events.map((e) => e.ev_percent)) : 0;
   const rate = events.length ? (vbs.length / events.length) * 100 : 0;
 
-  $("#kpi-events").textContent = events.length;
-  $("#kpi-value").textContent = vbs.length;
-  $("#kpi-rate").textContent = `${rate.toFixed(0)}% do recorte`;
-  $("#kpi-best").textContent = best > 0 ? `+${best.toFixed(2)}%` : "—";
+  setText("#kpi-events", events.length);
+  setText("#kpi-value", vbs.length);
+  setText("#kpi-rate", `${rate.toFixed(0)}% do recorte`);
+  setText("#kpi-best", best > 0 ? signedPct(best) : "-");
 
   // Esporte líder entre as value bets
   if (!vbs.length) {
-    $("#kpi-leader").textContent = "—";
+    setText("#kpi-leader", "-");
   } else {
     const counts = {};
     vbs.forEach((b) => (counts[b.sport] = (counts[b.sport] || 0) + 1));
     const [sport, n] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
-    $("#kpi-leader").textContent = `${SPORT_LABELS[sport] || sport} (${n})`;
+    setText("#kpi-leader", `${SPORT_LABELS[sport] || sport} (${n})`);
   }
+}
+
+// ---- Hero rail -------------------------------------------------------------
+function renderSignalRail() {
+  const host = $("#signal-rail");
+  if (!host) return;
+
+  const events = filteredEvents();
+  if (!events.length) {
+    host.innerHTML = '<div class="rail-empty">Sem eventos para o recorte atual.</div>';
+    return;
+  }
+
+  const picks = [...events].sort((a, b) => b.ev_percent - a.ev_percent).slice(0, 5);
+  const rows = picks
+    .map((e, i) => {
+      const score = Math.max(8, Math.min(100, (Math.max(0, e.ev_percent) / 16) * 100));
+      return (
+        `<article class="rail-item" style="--i:${i};--score:${score.toFixed(0)}%">` +
+        `<div class="rail-main">` +
+        `<div class="rail-market">${esc(e.selection)}</div>` +
+        `<div class="rail-event">${esc(SPORT_LABELS[e.sport] || e.sport)} · ${esc(e.event)}</div>` +
+        `</div>` +
+        `<div class="rail-numbers">` +
+        `<span class="rail-ev">${signedPct(e.ev_percent)}</span>` +
+        `<span class="rail-odd">casa ${e.bookmaker_odds.toFixed(2)} / sharp ${e.sharp_odds.toFixed(2)}</span>` +
+        `</div>` +
+        `<div class="rail-meter" aria-hidden="true"><i></i></div>` +
+        `</article>`
+      );
+    })
+    .join("");
+
+  host.innerHTML =
+    `<div class="rail-header">` +
+    `<div class="rail-title">Esteira EV+ mock</div>` +
+    `<div class="rail-status">feed local</div>` +
+    `</div>` +
+    `<div class="rail-list">${rows}</div>` +
+    `<div class="rail-footer"><span>${events.length} eventos no recorte</span><span>ordenado por maior EV</span></div>`;
 }
 
 // ---- Scatter SVG -----------------------------------------------------------
@@ -105,9 +156,10 @@ function renderScatter() {
   events.forEach((e, i) => {
     const isVal = e.ev_percent >= state.minEv;
     const r = Math.max(4, Math.min(12, 4 + Math.abs(e.ev_percent) * 0.45));
+    const label = `${e.selection}, ${e.event}, EV ${signedPct(e.ev_percent)}, odd casa ${e.bookmaker_odds.toFixed(2)}`;
     parts.push(
       `<circle class="dot" cx="${sx(e.bookmaker_odds).toFixed(1)}" cy="${sy(e.ev_percent).toFixed(1)}" r="${r.toFixed(1)}" ` +
-      `fill="${isVal ? "#2dd4a7" : "#5d6b80"}" data-i="${i}" />`
+      `fill="${isVal ? "#2dd4a7" : "#728098"}" data-i="${i}" tabindex="0" role="img" aria-label="${esc(label)}" />`
     );
   });
 
@@ -129,27 +181,48 @@ function niceTicks(min, max, count) {
 function attachTooltip(events) {
   const svg = $("#scatter svg");
   const tip = $("#tooltip");
-  const wrap = svg.closest(".scatter-wrap");
   if (!svg) return;
+  const wrap = svg.closest(".scatter-wrap");
+
+  const htmlFor = (e) =>
+    `<div class="tt-title">${esc(e.event)}</div>` +
+    `<div class="tt-row"><span>Seleção</span><span>${esc(e.selection)}</span></div>` +
+    `<div class="tt-row"><span>Casa / sharp</span><span>${e.bookmaker_odds.toFixed(2)} / ${e.sharp_odds.toFixed(2)}</span></div>` +
+    `<div class="tt-row"><span>EV</span><span class="tt-ev">${signedPct(e.ev_percent)}</span></div>`;
+
+  const showAt = (e, x, y) => {
+    tip.innerHTML = htmlFor(e);
+    const rect = wrap.getBoundingClientRect();
+    let left = x - rect.left + 14;
+    const top = y - rect.top + 14;
+    if (left + 210 > rect.width) left = x - rect.left - 210;
+    tip.style.left = `${Math.max(8, left)}px`;
+    tip.style.top = `${Math.max(8, top)}px`;
+    tip.classList.add("is-visible");
+  };
+
+  const hide = () => {
+    tip.classList.remove("is-visible");
+  };
 
   svg.addEventListener("mousemove", (ev) => {
     const dot = ev.target.closest(".dot");
-    if (!dot) { tip.style.opacity = "0"; return; }
+    if (!dot) { hide(); return; }
     const e = events[Number(dot.dataset.i)];
-    tip.innerHTML =
-      `<div class="tt-title">${esc(e.event)}</div>` +
-      `<div class="tt-row"><span>Seleção</span><span>${esc(e.selection)}</span></div>` +
-      `<div class="tt-row"><span>Casa / sharp</span><span>${e.bookmaker_odds.toFixed(2)} / ${e.sharp_odds.toFixed(2)}</span></div>` +
-      `<div class="tt-row"><span>EV</span><span class="tt-ev">${e.ev_percent >= 0 ? "+" : ""}${e.ev_percent.toFixed(2)}%</span></div>`;
-    const rect = wrap.getBoundingClientRect();
-    let x = ev.clientX - rect.left + 14;
-    const y = ev.clientY - rect.top + 14;
-    if (x + 190 > rect.width) x = ev.clientX - rect.left - 190;
-    tip.style.left = `${x}px`;
-    tip.style.top = `${y}px`;
-    tip.style.opacity = "1";
+    showAt(e, ev.clientX, ev.clientY);
   });
-  svg.addEventListener("mouseleave", () => { tip.style.opacity = "0"; });
+  svg.addEventListener("focusin", (ev) => {
+    const dot = ev.target.closest(".dot");
+    if (!dot) return;
+    const e = events[Number(dot.dataset.i)];
+    const rect = dot.getBoundingClientRect();
+    showAt(e, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  });
+  svg.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") hide();
+  });
+  svg.addEventListener("focusout", hide);
+  svg.addEventListener("mouseleave", hide);
 }
 
 // ---- Maior oportunidade ----------------------------------------------------
@@ -157,14 +230,16 @@ function renderTopBet() {
   const el = $("#top-bet");
   const top = valueBets()[0];
   if (!top) {
-    el.innerHTML = '<h3>Sem sinal EV+</h3><p class="muted">Os filtros atuais não encontram eventos acima do corte.</p>';
+    el.innerHTML = '<span class="panel-kicker">Top sinal</span><h2>Sem sinal EV+</h2><p class="muted">Os filtros atuais não encontram eventos acima do corte.</p>';
     return;
   }
   el.innerHTML =
-    `<h3>Top sinal do recorte</h3>` +
+    `<span class="panel-kicker">Top sinal do recorte</span>` +
+    `<h2>Maior oportunidade</h2>` +
     `<p><strong>${esc(top.selection)}</strong> · <span class="muted">${esc(top.event)}</span></p>` +
     `<div class="chips">` +
-    `<span class="chip green">EV +${top.ev_percent.toFixed(2)}%</span>` +
+    `<span class="chip green">EV ${signedPct(top.ev_percent)}</span>` +
+    `<span class="chip">${esc(SPORT_LABELS[top.sport] || top.sport)}</span>` +
     `<span class="chip">casa ${top.bookmaker_odds.toFixed(2)}</span>` +
     `<span class="chip">sharp ${top.sharp_odds.toFixed(2)}</span>` +
     `</div>`;
@@ -176,14 +251,14 @@ function renderTable() {
   const vbs = valueBets();
   $("#vb-count").textContent = `(${vbs.length})`;
   if (!vbs.length) {
-    body.innerHTML = '<tr><td colspan="7" class="empty">Nenhuma oportunidade com os filtros atuais — baixe o EV mínimo.</td></tr>';
+    body.innerHTML = '<tr><td colspan="7" class="empty">Nenhuma oportunidade com os filtros atuais. Baixe o EV mínimo.</td></tr>';
     return;
   }
   body.innerHTML = vbs
-    .map((b) => {
+    .map((b, i) => {
       const w = Math.max(2, Math.min(100, (b.ev_percent / 15) * 100));
       return (
-        `<tr>` +
+        `<tr style="--row:${i}">` +
         `<td><span class="sport-tag">${esc(SPORT_LABELS[b.sport] || b.sport)}</span></td>` +
         `<td>${esc(b.event)}</td>` +
         `<td>${esc(b.selection)}</td>` +
@@ -191,7 +266,7 @@ function renderTable() {
         `<td class="num">${b.sharp_odds.toFixed(2)}</td>` +
         `<td class="num">${b.implied_probability.toFixed(4)}</td>` +
         `<td><div class="ev-cell"><div class="ev-bar"><i style="width:${w}%"></i></div>` +
-        `<span class="ev-num pos">+${b.ev_percent.toFixed(2)}%</span></div></td>` +
+        `<span class="ev-num pos">${signedPct(b.ev_percent)}</span></div></td>` +
         `</tr>`
       );
     })
@@ -223,9 +298,9 @@ function updateStake() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bankroll, risk_percent: risk }),
       });
-      out.innerHTML = `${money(r.stake)}<small>STAKE SUGERIDA</small>`;
+      out.innerHTML = `${money(r.stake)}<small>Stake sugerida</small>`;
     } catch (e) {
-      out.innerHTML = `R$ —<small>VALOR INVÁLIDO</small>`;
+      out.innerHTML = `R$ -<small>Valor inválido</small>`;
     }
   }, 250);
 }
@@ -233,6 +308,7 @@ function updateStake() {
 // ---- Render geral ----------------------------------------------------------
 function render() {
   renderKPIs();
+  renderSignalRail();
   renderScatter();
   renderTopBet();
   renderTable();
@@ -244,6 +320,7 @@ async function init() {
     state.all = await fetchJSON("/odds");
   } catch (e) {
     $("#scatter").innerHTML = '<div class="empty">Erro ao carregar a API. A API está rodando?</div>';
+    $("#signal-rail").innerHTML = '<div class="rail-empty">API indisponível para carregar sinais.</div>';
     return;
   }
   $("#pill-events").textContent = state.all.length;
@@ -256,7 +333,11 @@ async function init() {
     const btn = ev.target.closest("button");
     if (!btn) return;
     state.sport = btn.dataset.sport;
-    document.querySelectorAll("#sport-seg button").forEach((b) => b.classList.toggle("active", b === btn));
+    document.querySelectorAll("#sport-seg button").forEach((b) => {
+      const active = b === btn;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-pressed", String(active));
+    });
     render();
   });
 
