@@ -21,5 +21,6 @@ bestsignal.db
 .DS_Store
 
 # Tooling de agentes (não faz parte do projeto)
+.claude/
 .agents/
 skills-lock.json
