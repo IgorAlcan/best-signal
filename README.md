@@ -2,110 +2,97 @@
 
 ![CI](https://github.com/IgorAlcan/best-signal/actions/workflows/tests.yml/badge.svg)
 
-BestSignal é uma demo de portfólio que simula um painel de análise de apostas de
-valor, também chamadas de value bets ou EV+. O objetivo do projeto é mostrar,
-para recrutadores e avaliadores técnicos, minha capacidade de organizar uma
-aplicação Python com API, regra de negócio reutilizável, frontend, dashboard,
-testes automatizados, Docker e CI.
+BestSignal é um projeto de estudo que simula uma mesa simples de análise de
+apostas de valor, ou EV+. A ideia foi pegar um domínio com regra de negócio
+clara, tratar os dados com cuidado e entregar algo que desse para testar,
+rodar localmente e explicar em uma entrevista técnica.
 
-O projeto trabalha com dados 100% simulados. Ele não faz scraping, não usa
-tokens reais, não envia alertas externos e não representa recomendação
-financeira, promessa de lucro ou incentivo a apostas reais.
+O app usa dados mockados de eventos esportivos e compara a odd de uma casa comum
+com uma odd de referência, chamada aqui de sharp. A partir disso, calcula o valor
+esperado da seleção e marca quais oportunidades passam de um corte mínimo de EV.
+
+Tudo aqui é simulado. O projeto não faz scraping, não usa token real, não envia
+alertas externos e não deve ser lido como recomendação financeira ou incentivo a
+apostas reais.
 
 ![Interface web BestSignal](docs/web.png)
 
-## Resumo para recrutadores
+## Por que construí
 
-Este projeto demonstra uma aplicação pequena, mas completa, com foco em:
+Eu queria um projeto que mostrasse mais do que uma tela bonita. O foco foi juntar
+backend, frontend, dashboard e testes em volta da mesma regra de negócio, sem
+duplicar cálculo em cada camada.
 
-- Backend com FastAPI, Pydantic e endpoints documentados no Swagger.
-- Regras de negócio isoladas em services reutilizados pela API, pela interface web
-  e pelo dashboard Streamlit.
-- Frontend em HTML, CSS e JavaScript puro, consumindo a própria API com `fetch`.
-- Dashboard analítico em Streamlit com filtros, métricas, tabelas e gráficos.
-- Testes automatizados offline cobrindo API, cálculo de EV, odds, alertas
-  simulados e gestão de banca.
-- Execução local simples, Docker Compose e GitHub Actions para CI.
+Alguns pontos que tentei deixar claros no código:
 
-Em uma entrevista, este repositório pode ser usado para discutir arquitetura,
-validação de dados, separação de responsabilidades, testes, trade-offs de produto
-e postura responsável ao lidar com um domínio sensível.
+- a API só traduz HTTP para chamadas de serviço;
+- os cálculos ficam em `app/services`;
+- os dados são offline para a demo ser reproduzível;
+- o frontend consome a API de verdade, usando `fetch`;
+- o dashboard Streamlit reutiliza os mesmos services;
+- os testes cobrem tanto a API quanto a regra de negócio.
 
-## O que o sistema faz
+## O que dá para fazer no projeto
 
-BestSignal carrega uma base mockada de eventos esportivos e odds, calcula o valor
-esperado de cada oportunidade e destaca quais seleções passam de um EV mínimo.
-
-Na prática, a aplicação permite:
-
-- Listar odds simuladas enriquecidas com `implied_probability`, `ev_percent` e
-  `is_value_bet`.
-- Filtrar somente oportunidades com EV positivo acima de um limite configurável.
-- Calcular EV para um par de odds enviado pelo usuário.
-- Pré-visualizar mensagens de alerta simuladas, sem envio real.
-- Sugerir stake com base em percentual fixo da banca.
-- Visualizar os dados em uma interface web escura e em um dashboard Streamlit.
+- Ver uma lista de odds simuladas com EV calculado.
+- Filtrar apenas os sinais acima de um EV mínimo.
+- Calcular EV manualmente para um par de odds.
+- Pré-visualizar mensagens de alerta, sem enviar nada de verdade.
+- Calcular uma sugestão simples de stake por percentual da banca.
+- Abrir a mesma base em uma interface web e em um dashboard Streamlit.
 
 ## Interfaces
 
-### Interface web
+### Web
 
-A interface web fica em `web/` e é servida pela própria API em `/`.
+A interface principal fica em `web/` e é servida pela própria aplicação FastAPI
+em `/`. Ela tem KPIs, gráfico EV por odd, tabela de sinais, prévia de alerta e
+um bloco explicando o modelo usado.
 
-Ela mostra:
+O frontend foi feito com HTML, CSS e JavaScript puro. Escolhi esse caminho para
+manter a demo leve e mostrar o consumo da API sem esconder a lógica atrás de um
+framework.
 
-- KPIs de eventos, sinais EV+, maior EV e esporte líder.
-- Gráfico EV por odd da casa em SVG, sem biblioteca externa.
-- Tabela de sinais EV+ ordenada por EV.
-- Simulação de alertas.
-- Calculadora simples de stake.
-- Bloco explicando a fórmula e as limitações do modelo.
+### Streamlit
 
-### Dashboard Streamlit
-
-O dashboard fica em `dashboard.py` e consome os mesmos services do backend,
-sem duplicar regra de negócio.
+Também deixei um dashboard em `dashboard.py`. Ele não chama a API por HTTP:
+importa os services diretamente, aplica os filtros e monta as visualizações.
 
 ![Dashboard BestSignal](docs/dashboard.png)
 
-## Arquitetura
+## Estrutura
 
 ```text
 app/
 ├── api/                 # Rotas HTTP e schemas Pydantic
 ├── data/                # sample_odds.json com dados simulados
-├── services/            # Regras de negócio e cálculos reutilizáveis
-├── config.py            # Configuração por ambiente
-├── main.py              # Aplicação FastAPI e servidor da interface web
+├── services/            # Cálculos e regras de negócio
+├── config.py            # Configurações simples do projeto
+├── main.py              # FastAPI + arquivos estáticos da interface web
 └── models.py            # Modelos de domínio
-docs/                    # Documentação e imagens da demo
+docs/                    # Documentação e imagens
 tests/                   # Testes automatizados
-web/                     # HTML, CSS e JS da interface web
+web/                     # HTML, CSS e JS
 dashboard.py             # Dashboard Streamlit
 Dockerfile
 docker-compose.yml
 requirements.txt
 ```
 
-A camada de rotas é intencionalmente fina: ela recebe a requisição HTTP, chama os
-services e devolve a resposta. A regra de negócio fica concentrada em
-`app/services`, o que facilita teste, manutenção e reuso.
+## API
 
-## Endpoints principais
-
-| Método | Rota | Descrição |
+| Método | Rota | O que faz |
 | --- | --- | --- |
-| `GET` | `/health` | Checagem de saúde da API |
-| `GET` | `/odds` | Lista todos os eventos simulados com EV calculado |
-| `GET` | `/value-bets?min_ev=3.0` | Retorna apenas sinais acima do EV mínimo |
-| `POST` | `/calculate-ev` | Calcula EV para odds informadas no body |
-| `GET` | `/alerts` | Mostra mensagens de alerta simuladas |
-| `POST` | `/suggest-stake` | Sugere stake por percentual fixo da banca |
+| `GET` | `/health` | Retorna o status básico da API |
+| `GET` | `/odds` | Lista odds simuladas com EV calculado |
+| `GET` | `/value-bets?min_ev=3.0` | Filtra sinais acima do EV mínimo |
+| `POST` | `/calculate-ev` | Calcula EV para odds enviadas no body |
+| `GET` | `/alerts` | Monta mensagens simuladas de alerta |
+| `POST` | `/suggest-stake` | Sugere stake por percentual da banca |
 
-## Modelo de cálculo
+## Como o EV é calculado
 
-O projeto usa a odd de uma casa sharp como referência simplificada de
-probabilidade:
+O cálculo usa a odd sharp como uma aproximação de probabilidade:
 
 ```text
 probabilidade estimada = 1 / sharp_odds
@@ -120,12 +107,12 @@ sharp_odds = 1.85
 EV = ((1 / 1.85) * 2.10 - 1) * 100 = 13.51%
 ```
 
-Limite importante: esse modelo é uma simplificação. Odds sharp também carregam
-margem da casa, então `1 / sharp_odds` pode superestimar a probabilidade real. Em
-um produto real, o próximo passo seria remover a margem com um processo de
-de-vig usando os dois lados do mercado.
+Esse modelo é propositalmente simples. Em um produto real, eu não usaria a odd
+sharp crua como probabilidade justa sem antes remover margem da casa. O próximo
+passo seria trabalhar com os dois lados do mercado e aplicar de-vig antes de
+calcular o EV.
 
-## Tecnologias
+## Stack
 
 - Python 3.11+
 - FastAPI
@@ -135,13 +122,11 @@ de-vig usando os dois lados do mercado.
 - Pandas
 - Plotly
 - Pytest
-- HTML, CSS e JavaScript puro
-- Docker e Docker Compose
+- HTML, CSS e JavaScript
+- Docker Compose
 - GitHub Actions
 
-## Como rodar localmente
-
-Crie o ambiente virtual e instale as dependências:
+## Rodando localmente
 
 ```bash
 python3 -m venv .venv
@@ -149,25 +134,25 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 ```
 
-Rode a API:
+Para subir a API e a interface web:
 
 ```bash
 .venv/bin/uvicorn app.main:app --reload
 ```
 
-Acesse:
+Links locais:
 
 - Interface web: `http://127.0.0.1:8000/`
 - Swagger: `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/health`
 
-Rode o dashboard:
+Para abrir o dashboard:
 
 ```bash
 .venv/bin/streamlit run dashboard.py
 ```
 
-## Exemplos de uso da API
+## Exemplos rápidos
 
 ```bash
 curl http://127.0.0.1:8000/health
@@ -183,7 +168,7 @@ curl -X POST http://127.0.0.1:8000/calculate-ev \
   -d '{"bookmaker_odds":2.10,"sharp_odds":1.85}'
 ```
 
-Resposta esperada:
+Resposta:
 
 ```json
 {
@@ -201,14 +186,8 @@ Resposta esperada:
 .venv/bin/python -m pytest -q
 ```
 
-A suite cobre:
-
-- Cálculo de probabilidade implícita e EV.
-- Validação de odds inválidas.
-- Filtro de value bets.
-- Endpoints principais da API.
-- Alertas simulados.
-- Sugestão de stake.
+A suíte cobre os cálculos de EV, validações de odds, filtro de value bets,
+endpoints da API, alertas simulados e sugestão de stake.
 
 ## Docker
 
@@ -216,26 +195,15 @@ A suite cobre:
 docker compose up --build
 ```
 
-Depois acesse:
+Depois é só acessar:
 
 - API e interface web: `http://localhost:8000`
 - Swagger: `http://localhost:8000/docs`
 
-## Pontos de decisão técnica
+## O que eu melhoraria depois
 
-- Dados simulados para manter a demo reproduzível, segura e sem dependência de
-  fornecedores externos.
-- Services compartilhados para evitar regra de negócio duplicada entre API,
-  frontend e dashboard.
-- Pydantic para explicitar contratos e rejeitar entradas inválidas.
-- Testes offline para permitir CI rápido e previsível.
-- Frontend sem framework para demonstrar domínio de fundamentos de HTML, CSS,
-  JavaScript e consumo de API.
-
-## Roadmap
-
-- Implementar de-vig com mercados completos para reduzir viés de margem.
-- Persistir histórico local de sinais e resultados.
-- Adicionar autenticação e rate limiting em endpoints sensíveis.
+- Implementar de-vig usando mercados completos.
+- Salvar histórico local dos sinais calculados.
 - Criar conectores mockáveis para fontes externas.
-- Evoluir a interface com mais gráficos por esporte, mercado e faixa de EV.
+- Adicionar autenticação se algum endpoint passasse a lidar com dado sensível.
+- Melhorar a análise por esporte, mercado e faixa de EV.
